@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Next.js on AWS Fargate with Terraform
+ 
+![Preview](./.readme/cloudfront-nextjs.png)
 
-## Getting Started
+## Architecture
 
-First, run the development server:
+See the [Terraform code](./infra/main.tf) for the full architecture.
+
+- A VPC with public, private, private isolated subnets
+- An ECS cluster with a Fargate service
+- A Route 53 private hosted zone for the ECS service (AWS CloudMap/Service Discovery)
+- API Gateway w/ VPC Link Integration to the ECS service using the private DNS name
+- An ECS task definition with a container that runs the Next.js app
+- A CloudFront distribution with an API Gateway origin
+
+## Deploy to AWS with Terraform
+
+First, you need to install Terraform. You can download it from [here](https://www.terraform.io/downloads.html).
+
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd infra
+# Initialize the Terraform providers
+terraform init
+# See the changes that will be applied
+terraform plan
+# Apply the changes to your default AWS profile
+terraform apply
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+You can also use a different AWS profile by setting the `AWS_PROFILE` environment variable.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+```bash
+AWS_PROFILE=my-profile terraform apply
+```

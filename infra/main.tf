@@ -312,7 +312,6 @@ resource "aws_service_discovery_service" "nextjs_service_discovery" {
   }
 }
 
-
 resource "aws_security_group" "nextjs_service_sg" {
   vpc_id = aws_vpc.vpc.id
   ingress {
@@ -331,4 +330,67 @@ resource "aws_security_group" "nextjs_service_sg" {
     cidr_blocks = ["0.0.0.0/0"] 
     ipv6_cidr_blocks = ["::/0"]
   }
+}
+
+resource "aws_cloudfront_distribution" "nextjs_cdn" {
+  enabled = true
+  is_ipv6_enabled = true
+  origin {
+    origin_id = "default"
+    # Use the API gateway as the origin
+    domain_name = "${aws_apigatewayv2_api.nextjs_api.id}.execute-api.${var.aws_region}.amazonaws.com"
+    custom_origin_config {
+      origin_keepalive_timeout = 60
+      origin_read_timeout = 60
+      origin_protocol_policy = "https-only"
+      http_port = 80
+      https_port = 443
+      origin_ssl_protocols = ["TLSv1.2"]
+    }
+  }
+  # This is the cheapest price class, targets the US, Canada, and Europe
+  price_class = "PriceClass_100" 
+  default_cache_behavior {
+    allowed_methods =["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods  = ["GET", "HEAD"]
+    target_origin_id = "default"
+    viewer_protocol_policy = "redirect-to-https"
+    cache_policy_id = aws_cloudfront_cache_policy.nextjs_cdn_cache_policy.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host_header.id
+    compress = true # Compress response objects automatically
+  }
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+}
+
+resource "aws_cloudfront_cache_policy" "nextjs_cdn_cache_policy" {
+  name = "nextjs-cdn-cache-policy"
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    headers_config {
+      header_behavior = "none"
+    }
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+    enable_accept_encoding_gzip = true
+    enable_accept_encoding_brotli = true
+  }  
+  min_ttl = 0
+  default_ttl = 0 # Force the CDN to always check the origin for the latest content unless a cache-control header is set
+}
+
+# When not using a custom domain name, ignore the host header. Otherwise you'd use
+# the "AllViewerAndCloudFrontHeaders-2022-06" policy with ID "33f36d7e-f396-46d9-90e0-52428a34d9dc"
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host_header" {
+  # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-all-viewer-except-host-header
+  id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
 }
