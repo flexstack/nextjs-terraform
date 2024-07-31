@@ -15,7 +15,8 @@ See the [Terraform code](./infra/main.tf) for the full architecture.
 
 ## Deploy to AWS with Terraform
 
-First, you need to install Terraform. You can download it from [here](https://www.terraform.io/downloads.html).
+First, you need to install Terraform. You can download it from [here](https://www.terraform.io/downloads.html). You'll
+also need Docker and the AWS CLI installed and configured with your AWS credentials.
 
 
 ```bash
@@ -28,8 +29,8 @@ terraform plan
 terraform apply
 ```
 
-You can also use a different AWS profile by setting the `AWS_PROFILE` environment variable.
+You can also use a different AWS profile by setting the `TF_VAR_AWS_PROFILE` environment variable.
 
 ```bash
-AWS_PROFILE=my-profile terraform apply
+TF_VAR_AWS_PROFILE=my-profile terraform apply
 ```

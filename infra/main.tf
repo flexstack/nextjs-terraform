@@ -11,6 +11,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+  profile = var.aws_profile
 }
 
 variable "project_name" {
@@ -29,6 +30,12 @@ variable "aws_region" {
   description = "The AWS region"
   type        = string
   default     = "us-east-2"
+}
+
+variable "aws_profile" {
+  description = "The AWS profile to use"
+  type        = string
+  default     = "default"
 }
 
 variable "nextjs_cpu_arch" {
@@ -114,7 +121,7 @@ resource "null_resource" "image" {
 
   provisioner "local-exec" {
     command = <<EOF
-      aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repo.repository_url}
+      aws ecr get-login-password --profile ${var.aws_profile} --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repo.repository_url}
       docker build --platform=linux/${var.nextjs_cpu_arch} -t ${aws_ecr_repository.ecr_repo.repository_url}:${local.nextjs_image_hash} ../
       docker push ${aws_ecr_repository.ecr_repo.repository_url}:${local.nextjs_image_hash}
     EOF
